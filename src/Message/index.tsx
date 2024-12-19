@@ -79,5 +79,5 @@ export const MessageProvider = forwardRef<MessageRef>((_props, ref) => {
     return el
   }, [])
 
-  return createPortal(messageWrapper, el)
+  return createPortal(messageWrapper, el) // 将消息组件挂载到body上
 })
