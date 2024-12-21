@@ -1,58 +1,41 @@
 import express from 'express'
 import multer from 'multer'
+import cors from 'cors'
 import path from 'path'
 
 const app = express()
-const port = 3000
+app.use(cors())
 
-// Set up storage engine
 const storage = multer.diskStorage({
-  destination: './uploads/',
+  destination: function (req, file, cb) {
+    try {
+      fs.mkdirSync(path.join(process.cwd(), 'uploads'))
+    } catch (e) {}
+    cb(null, path.join(process.cwd(), 'uploads'))
+  },
   filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
+    const uniqueSuffix =
+      Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname)
+    cb(null, uniqueSuffix)
   },
 })
 
-// Init upload
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 1000000 }, // Limit file size to 1MB
-  fileFilter: function (req, file, cb) {
-    checkFileType(file, cb)
-  },
-}).single('myFile')
-
-// Check file type
-function checkFileType(file, cb) {
-  const filetypes = /jpeg|jpg|png|gif/
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase())
-  const mimetype = filetypes.test(file.mimetype)
-
-  if (mimetype && extname) {
-    return cb(null, true)
-  } else {
-    cb('Error: Images Only!')
-  }
-}
-
-// Public folder
-app.use(express.static('./public'))
-
-// Upload endpoint
-app.post('/upload', (req, res) => {
-  upload(req, res, (err) => {
-    if (err) {
-      res.status(400).send({ message: err })
-    } else {
-      if (req.file == undefined) {
-        res.status(400).send({ message: 'No file selected!' })
-      } else {
-        res.send({ message: 'File uploaded!', file: `uploads/${req.file.filename}` })
-      }
-    }
-  })
+  dest: 'uploads/',
+  storage,
 })
 
-app.listen(port, () => {
-  console.log(`Server started on http://localhost:${port}`)
+app.post('/upload', upload.single('file'), function (req, res, next) {
+  console.log('req.file', req.file)
+  console.log('req.body', req.body)
+
+  res.end(
+    JSON.stringify({
+      message: 'success',
+    }),
+  )
 })
+
+console.log('Server running on port: http://localhost:3333/upload')
+
+app.listen(3333)
